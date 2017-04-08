@@ -9,9 +9,5 @@
     "BannedDomains": [
       "reddit.com", "imgur.com", "facebook.com", "twitter.com"
     ]
-  },
-
-  "Mercury": {
-    "Key":  ""
   }
 }

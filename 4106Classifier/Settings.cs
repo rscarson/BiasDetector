@@ -26,11 +26,6 @@ namespace _4106Classifier {
 
             public int PostsToFetch { get; set; }
         }
-
-        public MercuryConfig Mercury { get; set; }
-        public class MercuryConfig {
-            public string Key { get; set; }
-        }
         
         /// <summary>
         /// Load config from JSON
