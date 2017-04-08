@@ -1,0 +1,17 @@
+﻿{
+  "Reddit": {
+    "Username": "",
+    "Password": "",
+    "ClientID": "",
+    "Secret": "",
+
+    "PostsToFetch": 100,
+    "BannedDomains": [
+      "reddit.com", "imgur.com", "facebook.com", "twitter.com"
+    ]
+  },
+
+  "Mercury": {
+    "Key":  ""
+  }
+}

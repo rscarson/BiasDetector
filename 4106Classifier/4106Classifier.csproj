@@ -33,6 +33,14 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Boilerpipe.Net, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Boilerpipe.Net.1.2.0\lib\net45\Boilerpipe.Net.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="HtmlAgilityPack, Version=1.4.9.5, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
+      <HintPath>..\packages\HtmlAgilityPack.1.4.9.5\lib\Net45\HtmlAgilityPack.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="LiteDB, Version=3.1.0.0, Culture=neutral, PublicKeyToken=4ee40123013c9f27, processorArchitecture=MSIL">
       <HintPath>..\packages\LiteDB.3.1.0\lib\net35\LiteDB.dll</HintPath>
       <Private>True</Private>
@@ -43,6 +51,14 @@
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.10.0.2\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="RedditSharp, Version=1.1.12.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\RedditSharp.1.1.12\lib\Net45\RedditSharp.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Sax.Net, Version=0.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Sax.Net.2.0.2\lib\net45\Sax.Net.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="StemmersNet, Version=1.1.1.0, Culture=neutral, PublicKeyToken=5b16b226aedf3c3b, processorArchitecture=MSIL">
@@ -60,13 +76,17 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Classifier.cs" />
+    <Compile Include="Corpus.cs" />
+    <Compile Include="Crawler.cs" />
     <Compile Include="Embedding.cs" />
+    <Compile Include="Settings.cs" />
     <Compile Include="UniformRandom.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+    <None Include="config.default.json" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -11,20 +11,26 @@ using LiteDB;
 
 namespace _4106Classifier {
     class Embedding {
-        [JsonIgnore]
+        public const int EmbeddingSize = 50;
+        public const int MinCount = 10;
+        public const int MaxExp = 6;
+        public const double StartingAlpha = 0.025;
+
         private static VectorBuilder<double> Vectors = Vector<double>.Build;
-
-        [JsonIgnore]
         private static MatrixBuilder<double> Matrices = Matrix<double>.Build;
-
-        [JsonIgnore]
         private static IStemmer Stemmer = new EnglishStemmer();
-
-        [JsonIgnore]
+        
         public Dictionary<string, Vector<double>> Vocabulary { get; set; }
+        public Dictionary<string, Vector<double>> Output { get; set; }
+        public Vector<double> Error;
+        public double Alpha;
 
-        public int EmbeddingSize { get; set; } // 50
-        public int MinCount { get; set; }
+        public Embedding() {
+            Vocabulary = new Dictionary<string, Vector<double>>();
+            Output = new Dictionary<string, Vector<double>>();
+            Error = Vectors.Dense(EmbeddingSize);
+            Alpha = StartingAlpha;
+        }
 
         /// <summary>
         /// Look up a word in the embedding vocabulary
@@ -45,7 +51,10 @@ namespace _4106Classifier {
         /// <param name="word">Word to add</param>
         public void Add(string word) {
             word = Stemmer.Stem(word);
-            Vocabulary[word] = Vectors.Random(EmbeddingSize, UniformRandom.Distribution);
+            if (!Vocabulary.ContainsKey(word))
+                Vocabulary[word] = Vectors.Random(EmbeddingSize, UniformRandom.Distribution);
+            if (!Output.ContainsKey(word))
+                Output[word] = Vectors.Random(EmbeddingSize, UniformRandom.Distribution);
         }
 
         /// <summary>
@@ -53,21 +62,78 @@ namespace _4106Classifier {
         /// </summary>
         /// <param name="path">Path to the corpus database</param>
         public void Train(string path) {
-            Corpus corpus = new Corpus(path);
-            var Hidden = Matrices.Random(corpus.Count, EmbeddingSize, UniformRandom.Distribution);
-            var Output = Vectors.Dense(corpus.Count);
+            EmbeddingCorpus corpus = new EmbeddingCorpus(path);
 
+            // Pre-add all words
+            foreach (List<string> sentence in corpus.Sentences) {
+                foreach (string word in sentence) {
+                    Add(word);
+                }
+            }
+            
+            // Learning
             foreach (List<string> sentence in corpus.Sentences) {
                 var _sentence = new List<String>(sentence.Where(w => !corpus.SubSampling(w)));
                 var _grams = BiGram.FromSentence(_sentence);
-                //TODO: https://github.com/chrisjmccormick/word2vec_commented/blob/master/word2vec.c#L931
+
+                foreach (var gram in _grams) {
+                    Output[gram.Right] = Vectors.Random(EmbeddingSize, UniformRandom.Distribution);
+
+                    // Positive sample
+                    UpdateSample(gram.Left, gram.Right, true);
+
+                    // Update negative samples
+                    foreach (string word in Vocabulary.Keys) {
+                        if (word == gram.Left || !corpus.NegativeSampling(word)) continue;
+                        UpdateSample(gram.Left, word, false);
+                    }
+
+                    // Update hidden layer
+                    for (int i = 0; i < EmbeddingSize; i++) {
+                        Vocabulary[gram.Left][i] += Error[i];
+                    }
+                }
             }
+        }
+
+        /// <summary>
+        /// Update weights for a sample
+        /// </summary>
+        /// <param name="left">Context word</param>
+        /// <param name="right">New word</param>
+        /// <param name="positive">True if positive example</param>
+        private void UpdateSample(string left, string right, bool positive) {
+            double f = Vocabulary[left].DotProduct(Output[right]);
+            double g = 0;
+
+            if (f > MaxExp)
+                g = positive ? 0 : -Alpha;
+            else if (f < -MaxExp)
+                g = positive ? Alpha : 0;
+            else g = ActivationFunction(f) * Alpha;
+
+            // Update error and output layers
+            for (int i = 0; i < EmbeddingSize; i++) {
+                Error[i] += g * Output[right][i];
+                Output[right][i] += g * Vocabulary[left][i];
+            }
+        }
+
+        /// <summary>
+        /// Activation function for training
+        /// </summary>
+        /// <param name="x">Input</param>
+        /// <returns>TODO: WHAT IS IT</returns>
+        private double ActivationFunction(double x) {
+            return 1 / (1 + Math.Exp(-x));
         }
 
         /// <summary>
         /// Class holding the bi-grams for training
         /// </summary>
         public class BiGram {
+            public const int WindowSize = 5;
+
             public string Left { get; set; }
             public string Right { get; set; }
 
@@ -88,83 +154,13 @@ namespace _4106Classifier {
                 List<BiGram> grams = new List<BiGram>();
                 for (int i = 0; i < sentence.Count - 1; i++) {
                     string left = Stemmer.Stem(sentence[i]);
-
-                    grams.Add(new BiGram(sentence[i], sentence[i + 1]));
-                    if (i + 2 < sentence.Count)
-                        grams.Add(new BiGram(sentence[i], sentence[i + 2]));
-                }
-
-                return grams;
-            }
-        }
-
-        /// <summary>
-        /// A saved training corpus
-        /// </summary>
-        public class Corpus {
-            public const double SubSamplingRate = 0.00001;
-            public const double SubSamplingPower = 3/4;
-
-            public List<List<string>> Sentences { get; set; }
-            public Dictionary<string, double> Frequencies { get; set; }
-            public double NegativeSamplingSum;
-            public int Count;
-
-            public Corpus(string path) {
-                Load(path);
-            }
-
-            /// <summary>
-            /// Load from database
-            /// </summary>
-            /// <param name="path">Path to the database</param>
-            public void Load(string path) {
-                Sentences = new List<List<string>>();
-                Frequencies = new Dictionary<string, double>();
-                Count = 0;
-                NegativeSamplingSum = 0;
-
-                // Read in
-                using (var db = new LiteDatabase(path)) {
-                    var col = db.GetCollection<BsonDocument>("sentences");
-                    foreach (BsonDocument doc in col.FindAll()) {
-                        List<string> sentence = new List<string>();
-                        foreach (string word in doc["words"].AsArray) {
-                            string stemmed = Stemmer.Stem(word);
-                            sentence.Add(stemmed);
-                            Frequencies[stemmed] = Frequencies.ContainsKey(stemmed) ? Frequencies[stemmed] + 1 : 1;
-                            Count++;
-                        }
-
-                        Sentences.Add(sentence);
+                    for (int j = i + 1; j < sentence.Count && j - i <= WindowSize; j++) {
+                        string right = Stemmer.Stem(sentence[j]);
+                        grams.Add(new BiGram(left, right));
                     }
                 }
 
-                // Post process frequencies
-                foreach (string word in Frequencies.Keys) {
-                    Frequencies[word] /= Count;
-                    NegativeSamplingSum += Math.Pow(Frequencies[word], SubSamplingPower);
-                }
-            }
-
-            /// <summary>
-            /// Subsampling test for training
-            /// </summary>
-            /// <param name="word">Tested word</param>
-            /// <returns>True to remove the word</returns>
-            public bool SubSampling(string word) {
-                double fq = Frequencies[word];
-                return (Math.Sqrt(fq / SubSamplingRate) + 1) * (SubSamplingRate / fq) < UniformRandom.Next();
-            }
-
-            /// <summary>
-            /// Negative sampling test for training
-            /// </summary>
-            /// <param name="word">Tested word</param>
-            /// <returns>True to sample</returns>
-            public bool NegativeSampling(string word) {
-                double fq = Math.Pow(Frequencies[word], SubSamplingPower);
-                return fq / NegativeSamplingSum > UniformRandom.Next();
+                return grams;
             }
         }
     }
