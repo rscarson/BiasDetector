@@ -50,11 +50,8 @@ namespace _4106Classifier {
         /// </summary>
         /// <param name="word">Word to add</param>
         public void Add(string word) {
-            word = Stemmer.Stem(word);
-            if (!Vocabulary.ContainsKey(word))
-                Vocabulary[word] = Vectors.Random(EmbeddingSize, UniformRandom.Distribution);
-            if (!Output.ContainsKey(word))
-                Output[word] = Vectors.Random(EmbeddingSize, UniformRandom.Distribution);
+            Vocabulary[word] = Vectors.Random(EmbeddingSize, UniformRandom.Distribution);
+            Output[word] = Vectors.Random(EmbeddingSize, UniformRandom.Distribution);
         }
 
         /// <summary>
@@ -123,9 +120,62 @@ namespace _4106Classifier {
         /// Activation function for training
         /// </summary>
         /// <param name="x">Input</param>
-        /// <returns>TODO: WHAT IS IT</returns>
+        /// <returns>sigmoid function</returns>
         private double ActivationFunction(double x) {
             return 1 / (1 + Math.Exp(-x));
+        }
+
+        /// <summary>
+        /// Save current database
+        /// </summary>
+        /// <param name="path">Path to the database</param>
+        public void Save(string path) {
+            System.IO.File.Delete(path);
+            using (var db = new LiteDatabase(path)) {
+                var collection = db.GetCollection<EmbeddedWord>("vocabulary");
+                foreach (var word in Vocabulary)
+                    collection.Insert(new EmbeddedWord(word.Key, word.Value));
+            }
+        }
+
+        /// <summary>
+        /// Load a stored embedding map
+        /// </summary>
+        /// <param name="path">Path to the database</param>
+        public void Load(string path) {
+            using (var db = new LiteDatabase(path)) {
+                var collection = db.GetCollection<EmbeddedWord>("vocabulary");
+                foreach (var word in collection.FindAll())
+                    if (!Vocabulary.ContainsKey(word.Word))
+                        Vocabulary.Add(word.Word, Vectors.DenseOfArray(word.Vector));
+            }
+        }
+
+        /// <summary>
+        /// Create the embedding database
+        /// </summary>
+        /// <param name="path">Path to the database</param>
+        public void Generate(string path) {
+            Crawler crawler = new Crawler();
+            Corpus corpus = new Corpus();
+
+            // Left bias sources
+            foreach (string source in Article.LeftSources) {
+                foreach (Article article in crawler.Articles(source, Article.BiasType.Left)) {
+                    corpus.Articles.Add(article);
+                }
+            }
+
+            // Right bias sources
+            foreach (string source in Article.RightSources) {
+                foreach (Article article in crawler.Articles(source, Article.BiasType.Right)) {
+                    corpus.Articles.Add(article);
+                }
+            }
+
+            corpus.Save("corpus.db");
+            Train("corpus.db");
+            Save(path);
         }
 
         /// <summary>
@@ -153,14 +203,28 @@ namespace _4106Classifier {
             public static List<BiGram> FromSentence(List<string> sentence) {
                 List<BiGram> grams = new List<BiGram>();
                 for (int i = 0; i < sentence.Count - 1; i++) {
-                    string left = Stemmer.Stem(sentence[i]);
+                    string left = sentence[i];
                     for (int j = i + 1; j < sentence.Count && j - i <= WindowSize; j++) {
-                        string right = Stemmer.Stem(sentence[j]);
+                        string right = sentence[j];
                         grams.Add(new BiGram(left, right));
                     }
                 }
 
                 return grams;
+            }
+        }
+
+        /// <summary>
+        /// For saving and reloading database status
+        /// </summary>
+        public class EmbeddedWord {
+            public string Word { get; set; }
+            public double[] Vector { get; set; }
+
+            public EmbeddedWord() { }
+
+            public EmbeddedWord(string word, Vector<double> vector) {
+                Word = word; Vector = vector.ToArray();
             }
         }
     }

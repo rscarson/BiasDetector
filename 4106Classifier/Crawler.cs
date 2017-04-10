@@ -7,11 +7,16 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace _4106Classifier {
     class Crawler {
         public const int MinLength = 100;
+        public const int MinWords = 10;
+        public static readonly char[] StopMarkers = { '\n', '.', '?', '!' };
+        public const string WordPattern = "[a-zA-Z]+[a-zA-Z0-9-']*";
+
         private Reddit reddit;
 
         public Crawler() {
@@ -31,7 +36,18 @@ namespace _4106Classifier {
         /// <param name="text">Input text</param>
         /// <returns>List of Lists of words</returns>
         public List<List<string>> Split(string text) {
+            var sentences = new List<List<string>>();
+            foreach (string sentence in text.Split(StopMarkers)) {
+                List<string> words = new List<string>();
+                foreach (var match in Regex.Matches(sentence.Replace('’', '\''), WordPattern)) {
+                    words.Add(match.ToString());
+                }
 
+                if (words.Count > MinWords)
+                    sentences.Add(words);
+            }
+
+            return sentences;
         }
 
         /// <summary>
@@ -39,8 +55,8 @@ namespace _4106Classifier {
         /// </summary>
         /// <param name="sub">/r/name</param>
         /// <returns>List of up to configured number of articles</returns>
-        public List<string> Articles(string sub) {
-            List<string> articles = new List<string>();
+        public List<Article> Articles(string sub, Article.BiasType bias) {
+            List<Article> articles = new List<Article>();
             var subreddit = reddit.GetSubreddit(sub);
             while (articles.Count < Settings.Instance.Reddit.PostsToFetch) {
                 int added = 0;
@@ -53,9 +69,15 @@ namespace _4106Classifier {
                     string response = FetchPage(post.Url.OriginalString);
                     string text = ArticleExtractor.Instance.GetText(response);
                     if (text.Length > MinLength) {
-                        text = HtmlAgilityPack.HtmlEntity.DeEntitize(text);
-                        articles.Add(text);
-                        Console.WriteLine(post.Url.OriginalString);
+                        try {
+                            text = HtmlAgilityPack.HtmlEntity.DeEntitize(text);
+                        } catch (Exception e) { }
+
+                        Article article = new Article();
+                        article.Sentences = Split(text);
+                        article.Bias = bias;
+
+                        articles.Add(article);
                         added++;
                     }
                 }

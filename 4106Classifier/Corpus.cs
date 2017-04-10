@@ -18,11 +18,14 @@ namespace _4106Classifier {
      * ]
      */
 
+    /// <summary>
+    /// Corpus variant for embeddings
+    /// </summary>
     class EmbeddingCorpus : Corpus {
         private static IStemmer Stemmer = new EnglishStemmer();
 
         public const double SubSamplingRate = 0.00001;
-        public const double SubSamplingPower = 3 / 4;
+        public const double SubSamplingPower = 3.0 / 4.0;
 
         public List<List<string>> Sentences { get; set; }
         public Dictionary<string, double> Frequencies { get; set; }
@@ -57,10 +60,12 @@ namespace _4106Classifier {
             }
 
             // Post process frequencies
+            var _frequencies = new Dictionary<string, double>();
             foreach (string word in Frequencies.Keys) {
-                Frequencies[word] /= Count;
+                _frequencies[word] = Frequencies[word] / Count;
                 NegativeSamplingSum += Math.Pow(Frequencies[word], SubSamplingPower);
             }
+            Frequencies = _frequencies;
         }
 
         /// <summary>
@@ -89,7 +94,12 @@ namespace _4106Classifier {
     /// </summary>
     class Corpus {
         public List<Article> Articles { get; set; }
-        public Corpus(string path) {
+
+        public Corpus() {
+            Articles = new List<Article>();
+        }
+
+        public Corpus(string path) : this() {
             Load(path);
         }
 
@@ -100,21 +110,68 @@ namespace _4106Classifier {
         public void Load(string path) {
             using (var db = new LiteDatabase(path)) {
                 foreach (Article article in db.GetCollection<Article>("articles").FindAll()) {
-                    Articles.Add(article);
+                    if (article.Sentences.Count > 0)
+                        Articles.Add(article);
                 }
             }
         }
 
         /// <summary>
-        /// An article from the database
+        /// Write the corpus database to disk
         /// </summary>
-        public class Article {
-            public BiasType Bias { get; set; }
-            public List<List<string>> Sentences { get; set; }
-
-            public enum BiasType {
-                Left, Right
+        /// <param name="path">Path to the database</param>
+        public void Save(string path) {
+            System.IO.File.Delete(path);
+            using (var db = new LiteDatabase(path)) {
+                var collection = db.GetCollection<Article>("articles");
+                foreach (Article article in Articles) {
+                    collection.Insert(article);
+                }
             }
         }
+    }
+
+    /// <summary>
+    /// An article from the database
+    /// </summary>
+    public class Article {
+        public BiasType Bias { get; set; }
+        public List<List<string>> Sentences { get; set; }
+
+        public enum BiasType {
+            Left, Right
+        }
+
+        /// <summary>
+        /// Squish all the sentences together
+        /// </summary>
+        /// <returns>squish</returns>
+        public List<string> Document() {
+            List<string> doc = new List<string>();
+            foreach (var sentence in Sentences)
+                doc.AddRange(sentence);
+            return doc;
+        }
+
+        /// <summary>
+        /// Sources of left biased training data
+        /// </summary>
+        public static readonly string[] LeftSources = {
+            "/r/politics",
+            "/r/Liberal",
+            "/r/canada"
+        };
+
+        /// <summary>
+        /// Sources of right biased training data
+        /// </summary>
+        public static readonly string[] RightSources = {
+            "/r/conservative",
+            "/r/metacanada",
+            "/r/The_Donald",
+            "/r/conservatives",
+            "/r/Republican",
+            "/r/conservatism",
+        };
     }
 }
