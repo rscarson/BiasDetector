@@ -50,8 +50,8 @@ namespace _4106Classifier {
         /// </summary>
         /// <param name="word">Word to add</param>
         public void Add(string word) {
-            Vocabulary[word] = Vectors.Random(EmbeddingSize, UniformRandom.Distribution);
-            Output[word] = Vectors.Random(EmbeddingSize, UniformRandom.Distribution);
+            Vocabulary[word] = Vectors.Random(EmbeddingSize, UniformRandom.Distribution).Map(p => p * 0.01);
+            Output[word] = Vectors.Random(EmbeddingSize, UniformRandom.Distribution).Map(p => p * 0.01);
         }
 
         /// <summary>
@@ -74,7 +74,7 @@ namespace _4106Classifier {
                 var _grams = BiGram.FromSentence(_sentence);
 
                 foreach (var gram in _grams) {
-                    Output[gram.Right] = Vectors.Random(EmbeddingSize, UniformRandom.Distribution);
+                    Output[gram.Right] = Vectors.Random(EmbeddingSize, UniformRandom.Distribution).Map(p => p * 0.01);
 
                     // Positive sample
                     UpdateSample(gram.Left, gram.Right, true);
