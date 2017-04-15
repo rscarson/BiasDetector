@@ -8,7 +8,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace _4106Classifier {
-    class AverageEmbedding {
+    public class AverageEmbedding {
+        public static int HiddenSize = 100;
+        public static int Classes = 2;
         public static double StepSize = 1;
         public static double Reg = 0.001;
 
@@ -18,17 +20,26 @@ namespace _4106Classifier {
         
         public Embedding Embedding { get; set; }
         public int CorpusSize { get; set; }
-        public Matrix<double> SoftMax { get; set; }
-        public Vector<double> Bias { get; set; }
         public Dictionary<string, int> CorpusAppearances { get; set; }
+
+        public Matrix<double> W1 { get; set; }
+        public Vector<double> B1 { get; set; }
+
+        public Matrix<double> W2 { get; set; }
+        public Vector<double> B2 { get; set; }
 
         public AverageEmbedding() {
             CorpusSize = 0;
             CorpusAppearances = new Dictionary<string, int>();
             Embedding = new Embedding();
             Embedding.Load("embedding.db");
-            SoftMax = Matrices.Random(Embedding.EmbeddingSize, 2).Map(p => p * 0.01);
-            Bias = Vectors.Dense(2);
+
+
+            W1 = Matrices.Random(Embedding.EmbeddingSize, HiddenSize).Map(p => p * 0.01);
+            B1 = Vectors.Dense(HiddenSize);
+
+            W2 = Matrices.Random(HiddenSize, Classes).Map(p => p * 0.01);
+            B2 = Vectors.Dense(Classes);
         }
 
         /// <summary>
@@ -50,7 +61,7 @@ namespace _4106Classifier {
         /// Average embedding learning
         /// </summary>
         /// <param name="bias"></param>
-        public void Train(Article.BiasType bias) {
+        public void Train(Article.BiasType bias, string path) {
             Corpus corpus = new Corpus("corpus.db");
             var articles = corpus.Articles.OrderBy(p => 0.5 > UniformRandom.Next()).ToList();
 
@@ -84,11 +95,18 @@ namespace _4106Classifier {
                 X.SetRow(Xi++, WeightedAverage(document));
             }
 
-            for (int iteration = 0; iteration < 10000; iteration++) {
-                var scores = X * SoftMax;
+            double last_loss = double.PositiveInfinity;
+            for (int iteration = 0; iteration < 100000; iteration++) {
+                var hidden_layer = X * W1;
+                for (int i = 0; i < hidden_layer.RowCount; i++) {
+                    var row = hidden_layer.Row(i);
+                    hidden_layer.SetRow(i, (row + B1).Map(p => 1 / (1 + Math.Exp(-p))));
+                }
+
+                var scores = hidden_layer * W2;
                 for (int i = 0; i < scores.RowCount; i++) {
                     var row = scores.Row(i);
-                    scores.SetRow(i, row + Bias);
+                    scores.SetRow(i, row + B2);
                 }
 
                 var probs = scores.Clone().PointwiseExp();
@@ -117,21 +135,34 @@ namespace _4106Classifier {
                     data_loss += c;
                 }
                 data_loss /= training.Count;
-                var reg_loss = 0.5 * Reg * (SoftMax.PointwiseMultiply(SoftMax)).ColumnSums().Sum();
+                var reg_loss = 0.5 * Reg * (W1.PointwiseMultiply(W1)).ColumnSums().Sum();
+                reg_loss += 0.5 * Reg * (W2.PointwiseMultiply(W2)).ColumnSums().Sum();
                 var loss = data_loss + reg_loss;
                 if (iteration % 10 == 0) {
                     Console.WriteLine(string.Format("Iter. {0}: {1}", iteration, loss));
                 }
 
-                var dW = X.Transpose() * dscores;
-                var dB = dscores.ColumnSums();
-                dW += Reg * SoftMax;
+                var dW2 = hidden_layer.Transpose() * dscores;
+                var dB2 = dscores.ColumnSums();
+                dW2 += Reg * W2;
 
-                SoftMax += -StepSize * dW;
-                Bias += -StepSize * dB;
+                var dhidden = dscores * W2.Transpose();
+                dhidden = dhidden.Map(p => p * (1 - p));
+
+                var dW1 = X.Transpose() * dhidden;
+                var dB1 = dhidden.ColumnSums();
+                dW1 += Reg * W1;
+
+
+
+                W1 += -StepSize * dW1;
+                B1 += -StepSize * dB1;
+
+                W2 += -StepSize * dW2;
+                B2 += -StepSize * dB2;
             }
 
-            Save("avgembedding.db");
+            Save(path);
 
             int right = 0;
             foreach (Article a in testing) {
@@ -152,10 +183,14 @@ namespace _4106Classifier {
         /// <returns>Probability of match</returns>
         public double Probability(List<string> document) {
             var result = WeightedAverage(document);
-            var scores = result.ToRowMatrix() * SoftMax + Bias.ToRowMatrix();
-            double sum = scores.PointwiseExp().ColumnSums().Sum();
+            var hidden_layer = result.ToRowMatrix() * W1 + B1.ToRowMatrix();
+            hidden_layer.Map(p => 1 / (1 + Math.Exp(-p)));
 
-            return Math.Exp(scores[0,0]) / sum;
+            var scores = hidden_layer * W2 + B2.ToRowMatrix();
+
+            scores = scores.PointwiseExp();
+            double sum = scores.ColumnSums().Sum();
+            return scores[0, 0] / sum;
         }
 
         /// <summary>
@@ -220,25 +255,37 @@ namespace _4106Classifier {
 
         public class Saveable {
             public int CorpusSize { get; set; }
-            public double[][] W { get; set; }
-            public double[] B { get; set; }
             public Dictionary<string, int> CorpusAppearances { get; set; }
+
+            public double[][] W1 { get; set; }
+            public double[] B1 { get; set; }
+
+            public double[][] W2 { get; set; }
+            public double[] B2 { get; set; }
 
             public Saveable() { }
 
             public Saveable(AverageEmbedding c) {
                 CorpusSize = c.CorpusSize;
-                W = c.SoftMax.ToColumnArrays();
-                B = c.Bias.ToArray();
                 CorpusAppearances = new Dictionary<string, int>(c.CorpusAppearances);
+
+                W1 = c.W1.ToColumnArrays();
+                B1 = c.B1.ToArray();
+
+                W2 = c.W2.ToColumnArrays();
+                B2 = c.B2.ToArray();
             }
 
             public AverageEmbedding ToClassifier() {
                 var c = new AverageEmbedding();
                 c.CorpusSize = CorpusSize;
-                c.SoftMax = Matrices.DenseOfColumnArrays(W);
-                c.Bias = Vectors.DenseOfArray(B);
                 c.CorpusAppearances = CorpusAppearances;
+
+                c.W1 = Matrices.DenseOfColumnArrays(W1);
+                c.B1 = Vectors.DenseOfArray(B1);
+
+                c.W2 = Matrices.DenseOfColumnArrays(W2);
+                c.B2 = Vectors.DenseOfArray(B2);
 
                 return c;
             }

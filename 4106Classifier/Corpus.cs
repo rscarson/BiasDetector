@@ -21,7 +21,7 @@ namespace _4106Classifier {
     /// <summary>
     /// Corpus variant for embeddings
     /// </summary>
-    class EmbeddingCorpus : Corpus {
+    public class EmbeddingCorpus : Corpus {
         private static IStemmer Stemmer = new EnglishStemmer();
 
         public const double SubSamplingRate = 0.00001;
@@ -92,7 +92,7 @@ namespace _4106Classifier {
     /// <summary>
     /// Training corpus
     /// </summary>
-    class Corpus {
+    public class Corpus {
         public List<Article> Articles { get; set; }
 
         public Corpus() {
@@ -135,11 +135,12 @@ namespace _4106Classifier {
     /// An article from the database
     /// </summary>
     public class Article {
+        public string URL { get; set; }
         public BiasType Bias { get; set; }
         public List<List<string>> Sentences { get; set; }
 
         public enum BiasType {
-            Left, Right
+            Left, Right, None, Unknown
         }
 
         /// <summary>
@@ -148,6 +149,7 @@ namespace _4106Classifier {
         /// <returns>squish</returns>
         public List<string> Document() {
             List<string> doc = new List<string>();
+            if (Sentences == null) return doc;
             foreach (var sentence in Sentences)
                 doc.AddRange(sentence);
             return doc;
@@ -158,8 +160,8 @@ namespace _4106Classifier {
         /// </summary>
         public static readonly string[] LeftSources = {
             "/r/politics",
-            "/r/Liberal",
-            "/r/canada"
+            //"/r/Liberal",
+            //"/r/canada"
         };
 
         /// <summary>
@@ -167,11 +169,11 @@ namespace _4106Classifier {
         /// </summary>
         public static readonly string[] RightSources = {
             "/r/conservative",
-            "/r/metacanada",
-            "/r/The_Donald",
-            "/r/conservatives",
-            "/r/Republican",
-            "/r/conservatism",
+           // "/r/metacanada",
+           // "/r/The_Donald",
+            //"/r/conservatives",
+            //"/r/Republican",
+            //"/r/conservatism",
         };
     }
 }

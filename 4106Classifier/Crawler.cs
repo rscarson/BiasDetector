@@ -11,7 +11,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace _4106Classifier {
-    class Crawler {
+    public class Crawler {
         public const int MinLength = 100;
         public const int MinWords = 10;
         public static readonly char[] StopMarkers = { '\n', '.', '?', '!' };
@@ -65,19 +65,31 @@ namespace _4106Classifier {
                 foreach (var post in posts) {
                     if (Banned(post.Url.OriginalString)) continue;
 
+                    Article a = GetArticle(post.Url.OriginalString, bias);
+                    if (a.Sentences != null)
+                        articles.Add(a);
+                    added++;
+                }
 
-                    string response = FetchPage(post.Url.OriginalString);
-                    string text = ArticleExtractor.Instance.GetText(response);
-                    if (text.Length > MinLength) {
-                        try {
-                            text = HtmlAgilityPack.HtmlEntity.DeEntitize(text);
-                        } catch (Exception e) { }
+                if (added == 0) break;
+            }
 
-                        Article article = new Article();
-                        article.Sentences = Split(text);
-                        article.Bias = bias;
+            return articles;
+        }
 
-                        articles.Add(article);
+        public List<Article> FrontPage(string sub) {
+            List<Article> articles = new List<Article>();
+            var subreddit = reddit.GetSubreddit(sub);
+            while (articles.Count < Settings.Instance.Reddit.PostsToFetch) {
+                int added = 0;
+
+                var posts = subreddit.Hot.Take(Settings.Instance.Reddit.PostsToFetch);
+                foreach (var post in posts) {
+                    if (Banned(post.Url.OriginalString)) continue;
+
+                    Article a = GetArticle(post.Url.OriginalString, Article.BiasType.Unknown);
+                    if (a.Sentences != null) {
+                        articles.Add(a);
                         added++;
                     }
                 }
@@ -86,6 +98,31 @@ namespace _4106Classifier {
             }
 
             return articles;
+        }
+        
+        /// <summary>
+        /// Fetch a page
+        /// </summary>
+        /// <param name="url">Url of the page</param>
+        /// <param name="bias">Known bias of the article</param>
+        /// <returns>Article</returns>
+        public Article GetArticle(string url, Article.BiasType bias) {
+            Article article = new Article();
+            article.URL = url;
+            string response = FetchPage(url);
+            string text = ArticleExtractor.Instance.GetText(response);
+
+            if (text.Length > MinLength) {
+                try {
+                    text = HtmlAgilityPack.HtmlEntity.DeEntitize(text);
+                } catch (Exception e) { }
+
+                article.Sentences = Split(text);
+                article.Bias = bias;
+
+            }
+
+            return article;
         }
 
         /// <summary>

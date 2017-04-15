@@ -89,6 +89,12 @@
       <DependentUpon>EmbeddingView.cs</DependentUpon>
     </Compile>
     <Compile Include="Extensions.cs" />
+    <Compile Include="Interface.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Interface.Designer.cs">
+      <DependentUpon>Interface.cs</DependentUpon>
+    </Compile>
     <Compile Include="Settings.cs" />
     <Compile Include="UniformRandom.cs" />
     <Compile Include="Program.cs" />
@@ -102,6 +108,9 @@
   <ItemGroup>
     <EmbeddedResource Include="EmbeddingView.resx">
       <DependentUpon>EmbeddingView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Interface.resx">
+      <DependentUpon>Interface.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

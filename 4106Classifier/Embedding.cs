@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using LiteDB;
 
 namespace _4106Classifier {
-    class Embedding {
+    public class Embedding {
         public const int EmbeddingSize = 50;
         public const int MinCount = 10;
         public const int MaxExp = 6;
@@ -174,8 +174,8 @@ namespace _4106Classifier {
             }
 
             corpus.Save("corpus.db");
-            Train("corpus.db");
-            Save(path);
+            //Train("corpus.db");
+            //Save(path);
         }
 
         /// <summary>
