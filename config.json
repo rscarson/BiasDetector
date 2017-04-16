@@ -1,0 +1,13 @@
+﻿{
+  "Reddit": {
+    "Username": "",
+    "Password": "",
+    "ClientID": "",
+    "Secret": "",
+
+    "PostsToFetch": 25,
+    "BannedDomains": [
+      "reddit.com", "imgur.com", "facebook.com", "twitter.com", "i.redd.it", "i.reddituploads.com"
+    ]
+  }
+}

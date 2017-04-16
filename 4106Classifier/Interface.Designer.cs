@@ -27,11 +27,11 @@
             this.button1 = new System.Windows.Forms.Button();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.panel2 = new System.Windows.Forms.Panel();
-            this.percent_left = new System.Windows.Forms.Label();
-            this.right_percentage = new System.Windows.Forms.Label();
-            this.result = new System.Windows.Forms.Label();
-            this.button2 = new System.Windows.Forms.Button();
             this.url = new System.Windows.Forms.Label();
+            this.button2 = new System.Windows.Forms.Button();
+            this.result = new System.Windows.Forms.Label();
+            this.right_percentage = new System.Windows.Forms.Label();
+            this.percent_left = new System.Windows.Forms.Label();
             this.panel1.SuspendLayout();
             this.panel2.SuspendLayout();
             this.SuspendLayout();
@@ -79,35 +79,14 @@
             this.panel2.Size = new System.Drawing.Size(962, 564);
             this.panel2.TabIndex = 1;
             // 
-            // percent_left
+            // url
             // 
-            this.percent_left.Dock = System.Windows.Forms.DockStyle.Left;
-            this.percent_left.Font = new System.Drawing.Font("Microsoft Sans Serif", 36F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.percent_left.Location = new System.Drawing.Point(0, 0);
-            this.percent_left.Name = "percent_left";
-            this.percent_left.Size = new System.Drawing.Size(220, 564);
-            this.percent_left.TabIndex = 0;
-            this.percent_left.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            // 
-            // right_percentage
-            // 
-            this.right_percentage.Dock = System.Windows.Forms.DockStyle.Right;
-            this.right_percentage.Font = new System.Drawing.Font("Microsoft Sans Serif", 36F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.right_percentage.Location = new System.Drawing.Point(742, 0);
-            this.right_percentage.Name = "right_percentage";
-            this.right_percentage.Size = new System.Drawing.Size(220, 564);
-            this.right_percentage.TabIndex = 1;
-            this.right_percentage.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // result
-            // 
-            this.result.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.result.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.result.Location = new System.Drawing.Point(220, 0);
-            this.result.Name = "result";
-            this.result.Size = new System.Drawing.Size(522, 564);
-            this.result.TabIndex = 2;
-            this.result.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.url.Dock = System.Windows.Forms.DockStyle.Top;
+            this.url.Location = new System.Drawing.Point(220, 0);
+            this.url.Name = "url";
+            this.url.Size = new System.Drawing.Size(522, 23);
+            this.url.TabIndex = 4;
+            this.url.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // button2
             // 
@@ -120,14 +99,35 @@
             this.button2.UseVisualStyleBackColor = true;
             this.button2.Click += new System.EventHandler(this.button2_Click);
             // 
-            // url
+            // result
             // 
-            this.url.Dock = System.Windows.Forms.DockStyle.Top;
-            this.url.Location = new System.Drawing.Point(220, 0);
-            this.url.Name = "url";
-            this.url.Size = new System.Drawing.Size(522, 23);
-            this.url.TabIndex = 4;
-            this.url.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.result.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.result.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.result.Location = new System.Drawing.Point(220, 0);
+            this.result.Name = "result";
+            this.result.Size = new System.Drawing.Size(522, 564);
+            this.result.TabIndex = 2;
+            this.result.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // right_percentage
+            // 
+            this.right_percentage.Dock = System.Windows.Forms.DockStyle.Right;
+            this.right_percentage.Font = new System.Drawing.Font("Microsoft Sans Serif", 36F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.right_percentage.Location = new System.Drawing.Point(742, 0);
+            this.right_percentage.Name = "right_percentage";
+            this.right_percentage.Size = new System.Drawing.Size(220, 564);
+            this.right_percentage.TabIndex = 1;
+            this.right_percentage.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+            // 
+            // percent_left
+            // 
+            this.percent_left.Dock = System.Windows.Forms.DockStyle.Left;
+            this.percent_left.Font = new System.Drawing.Font("Microsoft Sans Serif", 36F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.percent_left.Location = new System.Drawing.Point(0, 0);
+            this.percent_left.Name = "percent_left";
+            this.percent_left.Size = new System.Drawing.Size(220, 564);
+            this.percent_left.TabIndex = 0;
+            this.percent_left.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // Interface
             // 

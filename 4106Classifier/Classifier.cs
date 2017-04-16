@@ -77,7 +77,7 @@ namespace _4106Classifier {
             if (Single.IsNaN((float)difference)) {
                 // Could not fetch article
                 return Article.BiasType.Unknown;
-            } else if (difference < MinimumDistance) {
+            } else if (difference < MinimumDistance || Math.Max(l, r) < 0.5) {
                 // Similar results; no bias
                 return Article.BiasType.None;
             } else if (l > r) {
